@@ -1,0 +1,38 @@
+{
+  "name": "exambro-desktop-nusantara",
+  "version": "1.0.0",
+  "description": "Exambro Nusantara Desktop - HIPPER Indonesia",
+  "author": "HIPPER Indonesia",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "build:mac": "electron-builder --mac --x64 --arm64"
+  },
+  "build": {
+    "appId": "id.hipper.exambrodesktop",
+    "productName": "Exambro Nusantara",
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "category": "public.app-category.education",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "identity": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}
