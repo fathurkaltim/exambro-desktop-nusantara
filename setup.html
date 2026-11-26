@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Konfigurasi Exambro Nusantara Universal</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body {
+      margin: 0; min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      color: #f8fafc; display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .card {
+      width: 100%; max-width: 540px; background: #1e293b; border: 1px solid #334155;
+      border-radius: 20px; padding: 28px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .badge {
+      display: inline-block; background: #0ea5e9; color: #0f172a; font-weight: 800;
+      font-size: 11px; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.05em; margin-bottom: 10px;
+    }
+    h1 { margin: 0 0 6px; font-size: 21px; color: #f8fafc; }
+    p.sub { margin: 0 0 20px; font-size: 13px; color: #cbd5e1; line-height: 1.5; }
+    .box { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+    label { display: block; font-size: 12px; font-weight: 700; color: #93c5fd; margin-bottom: 8px; text-transform: uppercase; }
+    textarea, input[type="password"] {
+      width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid #475569;
+      background: #1e293b; color: #fff; font-size: 13px; font-family: monospace; outline: none;
+    }
+    textarea:focus, input[type="password"]:focus { border-color: #38bdf8; }
+    .row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+    button {
+      border: none; border-radius: 10px; padding: 11px 16px; font-weight: 700; font-size: 13px;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.92; }
+    .btn-primary { background: #2563eb; color: #fff; flex: 1; }
+    .btn-emerald { background: #10b981; color: #fff; width: 100%; }
+    .btn-slate { background: #475569; color: #fff; }
+    .btn-danger { background: #dc2626; color: #fff; }
+    .msg {
+      margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; display: none;
+    }
+    .msg.err { display: block; background: rgba(239,68,68,0.2); border: 1px solid #ef4444; color: #fecaca; }
+    .msg.ok { display: block; background: rgba(16,185,129,0.2); border: 1px solid #10b981; color: #a7f3d0; }
+    .current-info {
+      background: rgba(56,189,248,0.12); border: 1px solid #0284c7; border-radius: 10px;
+      padding: 10px 12px; font-size: 12px; color: #bae6fd; margin-bottom: 16px;
+    }
+    .hint { font-size: 11px; color: #94a3b8; margin-top: 14px; text-align: center; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">EXAMBRO NUSANTARA UNIVERSAL v2.0</span>
+    <h1 id="pageTitle">Konfigurasi Server CBT Sekolah</h1>
+    <p class="sub" id="pageSub">Hubungkan perangkat ke server sekolah menggunakan file <strong>.cbtcfg</strong> atau <strong>Kode 1-Baris (CBTNFC1:...)</strong> dari halaman Pengaturan Admin CBT.</p>
+
+    <div id="currentInfo" class="current-info hidden"></div>
+
+    <!-- Panel Verifikasi PIN Admin -->
+    <div id="pinPanel" class="box hidden">
+      <label for="pinInput">PIN Kunci Admin Exambro</label>
+      <input id="pinInput" type="password" placeholder="Masukkan PIN Admin untuk membuka kunci server..." />
+      <div class="row">
+        <button class="btn-primary" id="btnVerifyPin">Buka Kunci Server</button>
+        <button class="btn-slate" id="btnCancelPin">Kembali ke Ujian</button>
+      </div>
+    </div>
+
+    <!-- Panel Setup Konfigurasi -->
+    <div id="setupPanel" class="hidden">
+      <div class="box">
+        <label>Opsi 1 — Impor File Konfigurasi (Rekomendasi Lab)</label>
+        <button class="btn-emerald" id="btnImportFile">Pilih File exambro-config.cbtcfg</button>
+      </div>
+
+      <div class="box">
+        <label for="codeInput">Opsi 2 — Tempel Kode Konfigurasi 1-Baris</label>
+        <textarea id="codeInput" rows="3" placeholder="Tempel kode CBTNFC1:... di sini"></textarea>
+        <div class="row">
+          <button class="btn-primary" id="btnApplyCode">Simpan &amp; Kunci Server</button>
+          <button class="btn-slate hidden" id="btnCancelSetup">Batal</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="statusMsg" class="msg"></div>
+
+    <div class="row" style="margin-top: 16px; justify-content: flex-end;">
+      <button class="btn-danger" id="btnQuit">Tutup Aplikasi</button>
+    </div>
+    <div class="hint">Pintasan Admin: <strong>Ctrl+S+B</strong> (Ganti Server) &bull; <strong>Ctrl+C+B</strong> (Keluar)</div>
+  </div>
+
+  <script>
+    const pinPanel = document.getElementById('pinPanel');
+    const setupPanel = document.getElementById('setupPanel');
+    const currentInfo = document.getElementById('currentInfo');
+    const btnCancelSetup = document.getElementById('btnCancelSetup');
+    const statusMsg = document.getElementById('statusMsg');
+
+    function showMsg(text, isErr) {
+      statusMsg.textContent = text;
+      statusMsg.className = 'msg ' + (isErr ? 'err' : 'ok');
+    }
+
+    async function init() {
+      const st = await window.exambroSetup.getState();
+      if (st.currentConfig && st.currentConfig.server_url) {
+        currentInfo.classList.remove('hidden');
+        currentInfo.innerHTML = '<strong>Server Aktif:</strong> ' + (st.currentConfig.school_name || '-') + '<br/><span style="font-family:monospace">' + st.currentConfig.server_url + '</span>';
+        btnCancelSetup.classList.remove('hidden');
+      }
+      if (st.requirePin) {
+        document.getElementById('pageTitle').textContent = 'Verifikasi Admin Sekolah';
+        document.getElementById('pageSub').textContent = 'Perangkat ini terkunci permanen. Masukkan PIN Kunci Admin Exambro untuk mengganti server sekolah.';
+        pinPanel.classList.remove('hidden');
+        setupPanel.classList.add('hidden');
+        document.getElementById('pinInput').focus();
+      } else {
+        pinPanel.classList.add('hidden');
+        setupPanel.classList.remove('hidden');
+      }
+    }
+
+    document.getElementById('btnVerifyPin').addEventListener('click', async () => {
+      const pin = document.getElementById('pinInput').value.trim();
+      if (!pin) return showMsg('Masukkan PIN Admin terlebih dahulu.', true);
+      const res = await window.exambroSetup.verifyAdminPin(pin);
+      if (res.ok) {
+        statusMsg.style.display = 'none';
+        document.getElementById('pageTitle').textContent = 'Ganti Server CBT Sekolah';
+        document.getElementById('pageSub').textContent = 'PIN terverifikasi. Pilih file .cbtcfg atau tempel kode CBTNFC1 sekolah baru.';
+        pinPanel.classList.add('hidden');
+        setupPanel.classList.remove('hidden');
+      } else {
+        showMsg(res.message || 'PIN Admin salah!', true);
+      }
+    });
+
+    document.getElementById('pinInput').addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') document.getElementById('btnVerifyPin').click();
+    });
+
+    document.getElementById('btnCancelPin').addEventListener('click', () => window.exambroSetup.cancelSetup());
+    document.getElementById('btnCancelSetup').addEventListener('click', () => window.exambroSetup.cancelSetup());
+    document.getElementById('btnQuit').addEventListener('click', () => window.exambroSetup.quitApp());
+
+    document.getElementById('btnImportFile').addEventListener('click', async () => {
+      const res = await window.exambroSetup.importConfigFile();
+      if (!res.canceled) {
+        showMsg(res.message || (res.ok ? 'Berhasil!' : 'Gagal impor file.'), !res.ok);
+      }
+    });
+
+    document.getElementById('btnApplyCode').addEventListener('click', async () => {
+      const code = document.getElementById('codeInput').value.trim();
+      if (!code) return showMsg('Tempel kode CBTNFC1:... terlebih dahulu.', true);
+      const res = await window.exambroSetup.applyConfigCode(code);
+      showMsg(res.message || (res.ok ? 'Berhasil!' : 'Kode tidak valid.'), !res.ok);
+    });
+
+    init();
+  </script>
+</body>
+</html>
